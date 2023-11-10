@@ -39,37 +39,32 @@ def extract_details_from_payload(payload):
     if 'response_url' in payload:
         callback_url = payload['response_url']
     return {
-        'ip':  ip,
-        'task_token':  task_token,
-        'action':  action,
+        'ip': ip,
+        'task_token': task_token,
+        'action': action,
         'callback_url': callback_url
     }
-
-
-def should_push_to_sqs(action):
-    return action.lower() == 'approve'
 
 
 def process_nacl_action(sqs_url, details):
     print('nacl_action: ', details)
 
-    if should_push_to_sqs(details['action']):
-        sqs = boto3.client('sqs')
-        sqs.send_message(
-            QueueUrl=sqs_url,
-            MessageBody=json.dumps(
-                {
-                    'ip': details['ip'],
-                    'task_token': details['task_token'],
-                    'action': details['action']
-                }
-            )
+    sqs = boto3.client('sqs')
+    sqs.send_message(
+        QueueUrl=sqs_url,
+        MessageBody=json.dumps(
+            {
+                'ip': details['ip'],
+                'task_token': details['task_token'],
+                'action': details['action']
+            }
         )
+    )
 
 
 def process_callback(details):
-    message_body_str = slack_message_template.replace("[Action]", details['action']+' Block').replace("[Resource]",
-                                                                                                      details['ip'])
+    message_body_str = slack_message_template.replace("[Action]", details['action'] + ' Block').replace("[Resource]",
+                                                                                                        details['ip'])
 
     message_body = json.loads(message_body_str)
     print(message_body)
@@ -106,4 +101,3 @@ def lambda_handler(event, context):
     process_callback(details)
 
     return {}
-
