@@ -6,6 +6,12 @@ Parameters:
   SlackWebhookUrl:
     Type: String
     Description: Webhook for sending messages to slack
+  TaskQueueName:
+    Type: String
+    Description: SQS Queue Name for Tasks
+  TaskQueueUrl:
+    Type: String
+    Description: SQS Queue Url for Tasks
 
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
@@ -23,10 +29,32 @@ Resources:
       Handler: app.lambda_handler
       Runtime: python3.11
       Architectures:
-      - arm64
+        - arm64
       Environment:
         Variables:
           slack_url: !Ref SlackWebhookUrl
+
+  SdlSlackCallbackWebhook:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: slack-callback-webhook/
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Events:
+        HttpApiEvent:
+          Type: HttpApi
+          Properties:
+            Path: /
+            Method: POST
+      Architectures:
+        - arm64
+      Policies:
+        - SQSSendMessagePolicy:
+            QueueName:
+              !Ref TaskQueueName
+      Environment:
+        Variables:
+          sqs_url: !Ref TaskQueueUrl
 
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
@@ -45,6 +73,9 @@ Outputs:
   SdlSlackSendBlockIPFunction:
     Description: SDL Slack Send Block IP Lambda Function ARN
     Value: !GetAtt SdlSlackSendBlockIP.Arn
+  SdlSlackCallbackWebhookFunction:
+    Description: SDL Slack Callback Webhook Lambda Function ARN
+    Value: !GetAtt SdlSlackCallbackWebhook.Arn
   SdlSlackSendBlockIPIamRole:
     Description: Implicit IAM Role created for SDL Slack Send Block IP Lambda Function
     Value: !GetAtt SdlSlackSendBlockIP.Arn

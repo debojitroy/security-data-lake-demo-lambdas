@@ -44,7 +44,7 @@ slack_message = '''
 						"text": "Approve"
 					},
 					"style": "primary",
-					"value": "[task_token]#approve"
+					"value": "[task_token]#[IP]#approve"
 				},
 				{
 					"type": "button",
@@ -54,7 +54,7 @@ slack_message = '''
 						"text": "Deny"
 					},
 					"style": "danger",
-					"value": "[task_token]#deny"
+					"value": "[task_token]#[IP]#deny"
 				}
 			]
 		}
