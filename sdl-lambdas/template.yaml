@@ -1,0 +1,50 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  sdl-slack-send-block-ip
+Parameters:
+  SlackWebhookUrl:
+    Type: String
+    Description: Webhook for sending messages to slack
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 256
+    Tracing: Active
+  Api:
+    TracingEnabled: true
+Resources:
+  SdlSlackSendBlockIP:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: slack-send-block-ip/
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Architectures:
+      - arm64
+      Environment:
+        Variables:
+          slack_url: !Ref SlackWebhookUrl
+
+  ApplicationResourceGroup:
+    Type: AWS::ResourceGroups::Group
+    Properties:
+      Name:
+        Fn::Sub: ApplicationInsights-SAM-${AWS::StackName}
+      ResourceQuery:
+        Type: CLOUDFORMATION_STACK_1_0
+  ApplicationInsightsMonitoring:
+    Type: AWS::ApplicationInsights::Application
+    Properties:
+      ResourceGroupName:
+        Ref: ApplicationResourceGroup
+      AutoConfigurationEnabled: 'true'
+Outputs:
+  SdlSlackSendBlockIPFunction:
+    Description: SDL Slack Send Block IP Lambda Function ARN
+    Value: !GetAtt SdlSlackSendBlockIP.Arn
+  SdlSlackSendBlockIPIamRole:
+    Description: Implicit IAM Role created for SDL Slack Send Block IP Lambda Function
+    Value: !GetAtt SdlSlackSendBlockIP.Arn
