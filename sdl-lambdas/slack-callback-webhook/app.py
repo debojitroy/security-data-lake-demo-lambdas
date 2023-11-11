@@ -13,7 +13,7 @@ slack_message_template = '''
 			"type": "section",
 			"text": {
 				"type": "mrkdwn",
-				"text": "Accepted your request - *[Action]* - *[Resource]*"
+				"text": ":saluting_face: Accepted your request - *[Action]* - *[Resource]*"
 			}
 		}
 	]

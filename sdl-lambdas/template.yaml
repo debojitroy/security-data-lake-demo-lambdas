@@ -3,6 +3,9 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   sdl-slack-send-block-ip
 Parameters:
+  NetworkAclId:
+    Type: String
+    Description: Network ACL ID
   SlackWebhookUrl:
     Type: String
     Description: Webhook for sending messages to slack
@@ -13,7 +16,6 @@ Parameters:
     Type: String
     Description: SQS Queue Url for Tasks
 
-# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
     Timeout: 30
@@ -22,8 +24,31 @@ Globals:
   Api:
     TracingEnabled: true
 Resources:
+  SdlFilterBruteForceAttacks:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: filter-brute-force-attacks/
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Architectures:
+        - arm64
+
+  SdlCheckNaclForIP:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: nacl-check-if-blocked/
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Architectures:
+        - arm64
+      Policies:
+        - AmazonEC2ReadOnlyAccess
+      Environment:
+        Variables:
+          nacl_id: !Ref NetworkAclId
+
   SdlSlackSendBlockIP:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Type: AWS::Serverless::Function
     Properties:
       CodeUri: slack-send-block-ip/
       Handler: app.lambda_handler
@@ -56,6 +81,25 @@ Resources:
         Variables:
           sqs_url: !Ref TaskQueueUrl
 
+  SdlNaclBlockIP:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: nacl-block-ip/
+      Handler: app.lambda_handler
+      Runtime: python3.11
+      Architectures:
+        - arm64
+      Policies:
+        - AmazonEC2FullAccess
+        - AWSStepFunctionsFullAccess
+        - SQSPollerPolicy:
+            QueueName:
+              !Ref TaskQueueName
+      Environment:
+        Variables:
+          nacl_id: !Ref NetworkAclId
+          slack_url: !Ref SlackWebhookUrl
+
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
     Properties:
@@ -70,11 +114,20 @@ Resources:
         Ref: ApplicationResourceGroup
       AutoConfigurationEnabled: 'true'
 Outputs:
+  SdlFilterBruteForceAttacksFunction:
+    Description: SDL Filter Brute Force Attacks Lambda Function ARN
+    Value: !GetAtt SdlFilterBruteForceAttacks.Arn
+  SdlCheckNaclForIPFunction:
+    Description: SDL Check Nacl For IP Lambda Function ARN
+    Value: !GetAtt SdlCheckNaclForIP.Arn
   SdlSlackSendBlockIPFunction:
     Description: SDL Slack Send Block IP Lambda Function ARN
     Value: !GetAtt SdlSlackSendBlockIP.Arn
   SdlSlackCallbackWebhookFunction:
     Description: SDL Slack Callback Webhook Lambda Function ARN
+    Value: !GetAtt SdlSlackCallbackWebhook.Arn
+  SdlNaclBlockIPFunction:
+    Description: SDL SQS read and block function Lambda Function ARN
     Value: !GetAtt SdlSlackCallbackWebhook.Arn
   SdlSlackSendBlockIPIamRole:
     Description: Implicit IAM Role created for SDL Slack Send Block IP Lambda Function
