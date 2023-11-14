@@ -24,7 +24,6 @@ slack_message_template = '''
 def extract_details_from_payload(payload):
     print(payload)
     ip = None
-    task_token = None
     action = None
     callback_url = None
 
@@ -33,14 +32,12 @@ def extract_details_from_payload(payload):
         print(action_string)
 
         action_details = action_string.split("#")
-        task_token = action_details[0]
-        ip = action_details[1]
-        action = action_details[2]
+        ip = action_details[0]
+        action = action_details[1]
     if 'response_url' in payload:
         callback_url = payload['response_url']
     return {
         'ip': ip,
-        'task_token': task_token,
         'action': action,
         'callback_url': callback_url
     }
@@ -55,7 +52,6 @@ def process_nacl_action(sqs_url, details):
         MessageBody=json.dumps(
             {
                 'ip': details['ip'],
-                'task_token': details['task_token'],
                 'action': details['action']
             }
         )

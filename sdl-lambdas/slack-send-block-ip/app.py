@@ -44,7 +44,7 @@ slack_message = '''
 						"text": "Approve"
 					},
 					"style": "primary",
-					"value": "[task_token]#[IP]#approve"
+					"value": "[IP]#approve"
 				},
 				{
 					"type": "button",
@@ -54,7 +54,7 @@ slack_message = '''
 						"text": "Deny"
 					},
 					"style": "danger",
-					"value": "[task_token]#[IP]#deny"
+					"value": "[IP]#deny"
 				}
 			]
 		}
@@ -65,10 +65,9 @@ slack_message = '''
 
 def lambda_handler(event, context):
     ip = event["ip_to_block"]
-    task_token = event["task_token"]
     slack_url = os.environ["slack_url"]
 
-    message_body_str = slack_message.replace("[IP]", ip).replace("[task_token]", task_token)
+    message_body_str = slack_message.replace("[IP]", ip)
 
     message_body = json.loads(message_body_str)
     print(message_body)

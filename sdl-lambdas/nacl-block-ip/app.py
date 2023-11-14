@@ -23,15 +23,6 @@ def should_block(action):
     return action == 'approve'
 
 
-def acknowledge_step_function(task_token, is_success):
-    step_function = boto3.client('stepfunctions')
-    if is_success:
-        step_function.send_task_success(taskToken=task_token)
-    else:
-        step_function.send_task_failure(taskToken=task_token)
-    return
-
-
 def get_lowest_ingress_rule_number(nacl_response):
     entries = nacl_response['NetworkAcls'][0]['Entries']
 
@@ -103,18 +94,15 @@ def lambda_handler(event, context):
         action_details = json.loads(payload)
 
         ip_to_block = action_details["ip"]
-        task_token = action_details["task_token"]
         action = action_details["action"]
 
         print('IP to Block: ', ip_to_block)
         print('Action: ', action)
-        print('Task Token: ', task_token)
         print('New Rule: ', new_rule)
 
         if should_block(action):
             rule = new_rule
             make_nacl_block_entry(nacl_id, ip_to_block, rule)
-            acknowledge_step_function(task_token, True)
             new_rule = new_rule - 10
 
         send_slack_message(slack_url, ip_to_block, action)
